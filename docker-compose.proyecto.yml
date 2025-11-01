@@ -27,7 +27,7 @@ services:
     networks:
       - kafka_net
 
-  abrenet_producer:
+  proy_producer:
     image: proy_cron
     container_name: abn_producer
     command: ["python", "main.py"]
@@ -41,7 +41,7 @@ services:
     networks:
       - kafka_net
 
-  abrenet_worker:
+  proy_worker:
     image: proy_cron
     container_name: abn_worker
     command: ["python", "main.py"]
@@ -50,6 +50,23 @@ services:
       - compose/envs/mongo.env
     volumes:
       - ./abrenet_worker:/app
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    networks:
+      - kafka_net
+
+  proy_streamlit:
+    image: proy_cron
+    container_name: abn_streamlit
+    command: ["streamlit", "run", "main.py"]
+    env_file:
+      - compose/envs/worker.env
+      - compose/envs/mongo.env
+    volumes:
+      - ./streamlit:/app
+    ports: 
+      - "8501:8501"
     depends_on:
       - kafka
     restart: unless-stopped

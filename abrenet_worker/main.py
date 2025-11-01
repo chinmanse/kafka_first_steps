@@ -71,13 +71,12 @@ def parsing_data(data):
 print("Worker escuchando mensajes...")
 for msg in consumer:
   print("Validando Acciones")
-  print("service" in msg.value)
   print("← Recibido:", msg.value)
   # data = parsing_data(msg.value)
   mongo_connection = MongoConnection()
   mongo_connection.insert('streaming', msg.value)
-  result = mongo_connection.get_records('streaming')
+  # result = mongo_connection.get_records('streaming')
   print("Datos almacenados")
-  for item in result:
-    print(item)
-  print(result)
+  # for item in result:
+  #   print(item)
+  # print(result)

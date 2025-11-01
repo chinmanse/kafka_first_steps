@@ -22,7 +22,7 @@ class DeSheduler(ScheduleInterface):
     for row in rows:
       print(row)
       self.producer.send(topic, row)
-      time.sleep(1)    
+      time.sleep(3)    
     data = {
       "data": 'hola'
     }

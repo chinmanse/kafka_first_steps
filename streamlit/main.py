@@ -19,7 +19,10 @@ def load_demo():
 
 @st.cache_data(ttl=10)
 def load_mongo(host, port, user, pwd, dbname, collection):
-    client = MongoClient(f"mongodb://{user}:{pwd}@{host}:{port}/")
+    connection_string = f"mongodb://{user}:{pwd}@{host}:{port}/"
+    print("connection_string")
+    print(connection_string)
+    client = MongoClient(connection_string)
     db = client[dbname]
     coll = db[collection]
     docs = list(coll.find().limit(10000))
@@ -52,24 +55,29 @@ def load_mongo(host, port, user, pwd, dbname, collection):
         df["id"] = np.arange(len(df)).astype(str)
     return df[["ts","service","workflow","status","latency_ms","topic","id"]].sort_values("ts")
 
-if mode.startswith("Demo"):
-    df = load_demo()
+# if mode.startswith("Demo"):
+#     df = load_demo()
+# else:
+host = st.sidebar.text_input("MONGO_HOST", os.getenv("MONGO_HOST","mongo"))
+port = int(st.sidebar.text_input("MONGO_PORT", os.getenv("MONGO_PORT","27017")))
+user = st.sidebar.text_input("MONGO_USER", os.getenv("MONGO_INITDB_ROOT_USERNAME","admin"))
+pwd = st.sidebar.text_input("MONGO_PASS", os.getenv("MONGO_INITDB_ROOT_PASSWORD","admin123"), type="password")
+dbname = st.sidebar.text_input("DATABASENAME", os.getenv("DATABASENAME","logs_database"))
+collection = st.sidebar.text_input("Colección", "streaming")
+df = None
+if st.sidebar.button("Cargar datos"):
+    df = load_mongo(host, port, user, pwd, dbname, collection)
 else:
-    host = st.sidebar.text_input("MONGO_HOST", os.getenv("MONGO_HOST","mongo"))
-    port = int(st.sidebar.text_input("MONGO_PORT", os.getenv("MONGO_PORT","27017")))
-    user = st.sidebar.text_input("MONGO_USER", os.getenv("MONGO_INITDB_ROOT_USERNAME","admin"))
-    pwd = st.sidebar.text_input("MONGO_PASS", os.getenv("MONGO_INITDB_ROOT_PASSWORD","admin123"), type="password")
-    dbname = st.sidebar.text_input("DATABASENAME", os.getenv("DATABASENAME","logs_database"))
-    collection = st.sidebar.text_input("Colección", "streaming")
-    if st.sidebar.button("Cargar datos"):
-        df = load_mongo(host, port, user, pwd, dbname, collection)
-    else:
-        st.info("Configura las credenciales y presiona **Cargar datos**.")
-        df = load_demo()
+    st.info("Configura las credenciales y presiona **Cargar datos**.")
+    # df = load_demo()
 
 # KPIs
 if not df.empty:
-    df_recent = df[df["ts"] > (pd.Timestamp.utcnow() - pd.Timedelta(minutes=5))]
+    df["ts"] = pd.to_datetime(df["ts"], errors="coerce", utc=True)
+    df_recent = df[pd.to_datetime(df["ts"]) > pd.to_datetime(pd.Timestamp.utcnow() - pd.Timedelta(minutes=5))]
+    # df_recent = df[
+    #     pd.to_datetime(df["ts"]) > pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=5)
+    # ]
     msgs_5min = len(df_recent)
     msgs_total = len(df)
     err_rate = (df["status"].eq("ERROR").mean()*100) if "status" in df.columns else 0

@@ -53,9 +53,9 @@ class MongoConnection():
       self.connect_database()
       self.table = self.database[table]
       registry = self.table.find()
-      for doc in registry:
-        print("Print interno")
-        print(doc)
+      # for doc in registry:
+      #   print("Print interno")
+      #   print(doc)
       return registry
     except Exception as e :
       print(e.args)

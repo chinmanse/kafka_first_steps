@@ -9,3 +9,5 @@ confluent-kafka
 pytz
 pandas
 matplotlib
+streamlit
+kafka-python

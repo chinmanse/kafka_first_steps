@@ -1,63 +1,75 @@
 version: '3.8'
 
+volumes:
+  db_mongo:
+
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: abn_kafka_zookeeper
+    env_file:
+      - compose/envs/zookeeper.env
+    ports: 
       - "2181:2181"
+    restart: unless-stopped
+    networks:
+      - kafka_net
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: abn_kafka
     depends_on:
       - zookeeper
+    env_file:
+      - compose/envs/kafka.env
     ports:
       - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - kafka_net
 
-  hadoop-namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
-    container_name: namenode
-    ports:
-      - "9870:9870"
-      - "9000:9000"
-    environment:
-      - CLUSTER_NAME=test-cluster
+  abrenet_producer:
+    image: proy_cron
+    container_name: abn_producer
+    command: ["python", "main.py"]
+    env_file:
+      - compose/envs/worker.env
     volumes:
-      - hadoop_namenode:/hadoop/dfs/name
-
-  hadoop-datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+      - ./abrenet_scheduler:/app
     depends_on:
-      - hadoop-namenode
-    environment:
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - kafka
+    restart: unless-stopped
+    networks:
+      - kafka_net
+
+  abrenet_worker:
+    image: proy_cron
+    container_name: abn_worker
+    command: ["python", "main.py"]
+    env_file:
+      - compose/envs/worker.env
+      - compose/envs/mongo.env
     volumes:
-      - hadoop_datanode:/hadoop/dfs/data
-
-  spark-master:
-    image: bde2020/spark-master:3.0.1-hadoop3.2
-    ports:
-      - "8080:8080"
-      - "7077:7077"
-    environment:
-      - INIT_DAEMON_STEP=setup_spark
-
-  spark-worker:
-    image: bde2020/spark-worker:3.0.1-hadoop3.2
+      - ./abrenet_worker:/app
     depends_on:
-      - spark-master
+      - kafka
+    restart: unless-stopped
+    networks:
+      - kafka_net
+  mongo:
+    image: proy_mongo
+    container_name: abn_mongo
+    restart: unless-stopped
     ports:
-      - "8081:8081"
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
+      - "27017:27017"
+    env_file:
+      - compose/envs/mongo.env
+    volumes:
+      - db_mongo:/data/db
+    networks:
+      - kafka_net
 
-volumes:
-  hadoop_namenode:
-  hadoop_datanode:
+
+networks:
+  kafka_net:
+    name: kafka_net
+    driver: bridge

@@ -1,0 +1,11 @@
+pymongo==4.13.0
+PyPDF2==3.0.1
+pyphen==0.17.2
+pytest==7.2.2
+python-dateutil==2.8.2
+requests==2.29.0
+APScheduler
+confluent-kafka
+pytz
+pandas
+matplotlib

@@ -17,6 +17,18 @@ docker build . -f compose/kafka/Dockerfile -t proy_cron
 docker build . -f compose/mongo/Dockerfile -t proy_mongo
 ```
 
+#### Nota para windows
+
+Para poder contruir la imagen en windows se debe entrar a la maquina virtual de linux
+
+En la consola y la carpeta del proyecto ejecutar lo siguiente
+
+```bash
+wsl
+```
+
+Estoy deberia iniciar una instacia de ubuntu, que permite continuar con la creacion de la imagen
+
 ### Puesta en marcha
 
 ```
